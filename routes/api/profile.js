@@ -1,33 +1,33 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const mongoose = require('mongoose');
-const passport = require('passport');
+const mongoose = require("mongoose");
+const passport = require("passport");
 
 // Load Validation
-const validateProfileInput = require('../../validation/profile');
+const validateProfileInput = require("../../validation/profile");
 
 // Load Profile Model
 
-const Profile = require('../../models/Profile');
+const Profile = require("../../models/Profile");
 
 // Load User Model
 
-const User = require('../../models/User');
+const User = require("../../models/User");
 
 // @route GET api/profile
 // @desc Get current users profile
 // @acess Private
 
 router.get(
-  '/',
-  passport.authenticate('jwt', { session: false }),
+  "/",
+  passport.authenticate("jwt", { session: false }),
   (req, res) => {
     const errors = {};
 
     Profile.findOne({ user: req.user.id })
       .then(profile => {
         if (!profile) {
-          errors.noprofile = 'There is no profile for this user';
+          errors.noprofile = "There is no profile for this user";
           return res.status(404).json(errors);
         }
         res.json(profile);
@@ -36,14 +36,76 @@ router.get(
   }
 );
 
+// @route GET api/profile/all
+// @desc Get all profiles
+// @acess Public
+
+router.get("/all", (req, res) => {
+  const errors = {};
+
+  Profile.find()
+    .populate("user", ["name", "avatar"])
+    .then(profiles => {
+      if (!profiles) {
+        errors.noprofile = "There are no profiles";
+        return res.status(404).json(errors);
+      }
+
+      res.json(profiles);
+    })
+    .catch(err => res.status(404).json({ profile: "there are no profiles" }));
+});
+
+// @route GET api/profile/handle/:handle
+// @desc Get profile by handle
+// @acess Public
+
+router.get("/handle/:handle", (req, res) => {
+  const errors = {};
+
+  Profile.findOne({ handle: req.params.handle })
+    .populate("user", ["name", "avatar"])
+    .then(profile => {
+      if (!profile) {
+        errors.noprofile = "There is no profile for this user";
+        res.status(404).json(errors);
+      }
+
+      res.json(profile);
+    })
+    .catch(err => res.status(404).json(err));
+});
+
+// @route GET api/profile/user/:user_id
+// @desc Get profile by user ID
+// @acess Public
+
+router.get("/user/:user_id", (req, res) => {
+  const errors = {};
+
+  Profile.findOne({ user: req.params.user_id })
+    .populate("user", ["name", "avatar"])
+    .then(profile => {
+      if (!profile) {
+        errors.noprofile = "There is no profile for this user";
+        res.status(404).json(errors);
+      }
+
+      res.json(profile);
+    })
+    .catch(err =>
+      res.status(404).json({ profile: "there is no profile for this user" })
+    );
+});
+
 // @route POST api/profile
 // @desc Create or Edit user profile
 // @acess Private
 
 router.post(
-  '/',
+  "/",
 
-  passport.authenticate('jwt', { session: false }),
+  passport.authenticate("jwt", { session: false }),
   (req, res) => {
     const { errors, isValid } = validateProfileInput(req.body);
     // Check Validation
@@ -67,8 +129,8 @@ router.post(
 
     // Skills - Split into array
 
-    if (typeof req.body.skills !== 'undefined') {
-      profileFields.skills = req.body.skills.split(',');
+    if (typeof req.body.skills !== "undefined") {
+      profileFields.skills = req.body.skills.split(",");
     }
     // Social
     profileFields.social = {};
@@ -93,7 +155,7 @@ router.post(
         // Check if handle exists
         Profile.findOne({ handle: profileFields.handle }).then(profile => {
           if (profile) {
-            errors.handle = 'that handle already exists';
+            errors.handle = "that handle already exists";
             res.status(400).json(errors);
           }
 
@@ -103,7 +165,6 @@ router.post(
         });
       }
     });
-    console.log('HERE!#####################!');
   }
 );
 
@@ -111,9 +172,9 @@ router.post(
 // @desc Tests profile route
 // @acess Public
 
-router.get('/test', (req, res) =>
+router.get("/test", (req, res) =>
   res.json({
-    msg: 'Profile Works'
+    msg: "Profile Works"
   })
 );
 
